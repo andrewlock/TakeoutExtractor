@@ -372,3 +372,4 @@ FodyWeavers.xsd
 
 # Don't ignore the third-party directory
 !Third party/*
+.idea/
