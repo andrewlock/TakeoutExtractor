@@ -243,7 +243,7 @@ namespace uk.andyjohnson.TakeoutExtractor.Lib.Photo
             try
             {
                 // Create output directory, if not already created, and output files.
-                var destDir = CreateOutputDir(outDir, originalFile, mi.creationTime, options);
+                var destDir = CreateOutputDir(outDir, originalFile, mi.takenTime, options);
                 return await CreateOutputFilesAsync(destDir, originalFile, editedFile, mi, results);
             }
             catch(Exception ex)
@@ -376,7 +376,7 @@ namespace uk.andyjohnson.TakeoutExtractor.Lib.Photo
             
             if (originalOutputDir != null && originalFile != null)
             {
-                var outFile = await CreateOutputFileAsync(originalFile, originalOutputDir, originalOutputSuffix,
+                var outFile = await CreateOutputFileAsync(originalFile.Name, originalFile, originalOutputDir, originalOutputSuffix,
                                                           mi.title, mi.description, mi.takenTime, mi.creationTime, mi.creationTime,
                                                           mi.exifLocation,
                                                           results);
@@ -386,7 +386,8 @@ namespace uk.andyjohnson.TakeoutExtractor.Lib.Photo
             }
             if (editedOutputDir != null && editedFile != null)
             {
-                var outFile = await CreateOutputFileAsync(editedFile, editedOutputDir, editedOutputSuffix,
+                var original = originalFile?.Name ?? editedFile.Name;
+                var outFile = await CreateOutputFileAsync(original, editedFile, editedOutputDir, editedOutputSuffix,
                                                           mi.title, mi.description, mi.takenTime, mi.creationTime, mi.lastModifiedTime,
                                                           mi.editedLocation != GeoLocation.NullLatLonAltLocation ? mi.editedLocation : mi.exifLocation,
                                                           results);
@@ -516,6 +517,7 @@ namespace uk.andyjohnson.TakeoutExtractor.Lib.Photo
         /// <returns>FileInfo object referring to the created file.</returns>
         /// <exception cref="InvalidOperationException">File creation failed</exception>
         private async Task<FileInfo> CreateOutputFileAsync(
+            string originalFilename,
             FileInfo sourceFile,
             DirectoryInfo outDir,
             string? filenameSuffix,
@@ -550,8 +552,9 @@ namespace uk.andyjohnson.TakeoutExtractor.Lib.Photo
                 // Build the output file name. Because images can have timestamps that differ by less than a second, we prepend
                 // a uniqieness suffix if necessary to make the filename uniqie.
                 var uniqSuffix = i == 0 ? "" : string.Format("-{0:000}", i);
-                var t = (this.options.OutputFileNameTimeKind == DateTimeKind.Utc) ? creationTime.ToUniversalTime() : creationTime.ToLocalTime();
-                var filename = t.ToString(options.OutputFileNameFormat) + uniqSuffix + filenameSuffix + sourceFile.Extension;
+                // var t = (this.options.OutputFileNameTimeKind == DateTimeKind.Utc) ? creationTime.ToUniversalTime() : creationTime.ToLocalTime();
+                // var filename = t.ToString(options.OutputFileNameFormat) + uniqSuffix + filenameSuffix + sourceFile.Extension;
+                var filename = $"{Path.GetFileNameWithoutExtension(originalFilename)}{uniqSuffix}{filenameSuffix}{Path.GetExtension(originalFilename)}";
                 var destFile = new FileInfo(Path.Combine(outDir.FullName, filename));
                 if (destFile.Exists)
                 {
@@ -569,8 +572,9 @@ namespace uk.andyjohnson.TakeoutExtractor.Lib.Photo
                             imageFile.Properties.Set(ExifTag.DocumentName, title);
                         if (!string.IsNullOrEmpty(description))
                             imageFile.Properties.Set(ExifTag.ImageDescription, description);
-                        imageFile.Properties.Set(ExifTag.DateTime, new ExifDateTime(ExifTag.DateTime, takenTime));
-                        imageFile.Properties.Set(ExifTag.DateTimeOriginal, new ExifDateTime(ExifTag.DateTime, creationTime));
+                        var (orig, taken) = takenTime > creationTime ? (creationTime, takenTime) : (takenTime, creationTime);  
+                        imageFile.Properties.Set(ExifTag.DateTime, new ExifDateTime(ExifTag.DateTime, taken));
+                        imageFile.Properties.Set(ExifTag.DateTimeOriginal, new ExifDateTime(ExifTag.DateTime, orig));
                         if (location != GeoLocation.NullLatLonAltLocation)
                         {
                             var locDmsAlt = GeoLocation.ToLatLonDmsAlt(location);
