@@ -56,7 +56,7 @@ namespace uk.andyjohnson.TakeoutExtractor.Cli
                                                                                         new string?[] { null, "utc", "local" },
                                                                                         defaultValue: PhotoOptions.Defaults.OutputFileNameTimeKind),
                             OutputFileVersionOrganisation = kvp.Value.GetArgEnum<PhotoFileVersionOrganisation>("fv",
-                                                                                                               new string?[] { null, "lv", "lvo", "avs", "avx", "ev", "ov" },
+                                                                                                               new string?[] { "lv", "lvo", "avs", "avx", "ev", "ov" },
                                                                                                                defaultValue: PhotoOptions.Defaults.OutputFileVersionOrganisation),
                             UpdateExif = kvp.Value.GetArgBool("ux", defaultValue: PhotoOptions.Defaults.UpdateExif),
                             OutputDirOrganisation = kvp.Value.GetArgEnum<PhotoDirOrganisation>("fd",
